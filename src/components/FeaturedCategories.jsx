@@ -73,7 +73,7 @@ const categories = [
     id: 5,
     title: "Raw materials ⋆⭒˚.⋆",
     imageUrl:"https://pbs.twimg.com/media/GzdAFwMW4AEB8kV?format=jpg&name=small",
-     link: "Pendent"
+     link: "Raw materials"
   },
   //       {
   //   id: 6,
