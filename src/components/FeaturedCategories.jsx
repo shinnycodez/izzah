@@ -5,13 +5,13 @@ const categories = [
     {
     id: 3,
     title: "Bracelets ˚⊹♡",
-    imageUrl: "https://i.postimg.cc/3xDtjrHL/image.png",
+    imageUrl: "https://pbs.twimg.com/media/Gzc-ELxWoAAGS0X?format=jpg&name=small",
     link: "Bracelets"
   },
   {
     id: 1,
     title: "Phone charms ⋆｡𖦹°",
-    imageUrl: "https://i.postimg.cc/T3mcLkrF/image.png",
+    imageUrl: "https://pbs.twimg.com/media/Gzc-F-GaQAAV5v8?format=jpg&name=small",
       link: "Phone charms",
   },
 
@@ -23,21 +23,57 @@ const categories = [
   // },
       {
     id: 2,
-    title: "keychains ˚⋆𐙚｡",
-    imageUrl: "https://i.postimg.cc/J0zyNQGb/image.png",
-      link: "keychains"
+    title: "Earings ˚⋆𐙚｡",
+    imageUrl: "https://pbs.twimg.com/media/Gzc-I82XwAAKxr7?format=jpg&name=small",
+      link: "Earings"
   },
       {
     id: 5,
     title: "Necklaces ｡°✩",
-    imageUrl:"https://i.postimg.cc/NGST66fc/image.png",
+    imageUrl:"https://pbs.twimg.com/media/Gzc-L8GacAEmHPd?format=jpg&name=small",
      link: "Necklaces"
   },
         {
     id: 5,
-    title: "Plushies / Trinkets ⋆⭒˚.⋆",
-    imageUrl:"https://scontent.flhe7-2.fna.fbcdn.net/v/t1.15752-9/525576846_1213728490767254_1766428545358139292_n.jpg?stp=dst-jpg_s480x480_tt6&_nc_cat=109&ccb=1-7&_nc_sid=0024fc&_nc_ohc=_BT1RcjUB3IQ7kNvwFYF7iA&_nc_oc=AdmwDteBLL-s_joZNncU601LCZdrCpmW9sspFevt0nLdtB0zgEHEY2eWI4KzhJbCsFs&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent.flhe7-2.fna&oh=03_Q7cD2wENRdhZhSmaPM4YuqQ0mVuzXHSDxRlf_BrAemBjvMfR3Q&oe=68B3D4B9",
-     link: "Plushies"
+    title: "Keychains ⋆⭒˚.⋆",
+    imageUrl:"https://pbs.twimg.com/media/Gzc-uwjWEAACedj?format=jpg&name=900x900",
+     link: "Keychains"
+  },
+            {
+    id: 5,
+    title: "Bag pins ⋆⭒˚.⋆",
+    imageUrl:"https://pbs.twimg.com/media/Gzc-9QZXwAA9qa0?format=jpg&name=small",
+     link: "Bag pins"
+  },
+              {
+    id: 5,
+    title: "Plushie keychains ⋆⭒˚.⋆",
+    imageUrl:"https://pbs.twimg.com/media/Gzc-_M8X0AAo98l?format=jpg&name=small",
+     link: "Plushie keychains"
+  },
+                {
+    id: 5,
+    title: "Hair pins ⋆⭒˚.⋆",
+    imageUrl:"https://pbs.twimg.com/media/Gzc_Av9XoAIXPkD?format=jpg&name=small",
+     link: "Hair pins"
+  },
+                  {
+    id: 5,
+    title: "Rings ⋆⭒˚.⋆",
+    imageUrl:"https://pbs.twimg.com/media/Gzc_CT3XwAAyD46?format=jpg&name=medium",
+     link: "Rings"
+  },
+                    {
+    id: 5,
+    title: "Pendent⋆⭒˚.⋆",
+    imageUrl:"https://pbs.twimg.com/media/GzdAEYoXAAAg5xT?format=jpg&name=small",
+     link: "Pendent"
+  },
+                      {
+    id: 5,
+    title: "Raw materials ⋆⭒˚.⋆",
+    imageUrl:"https://pbs.twimg.com/media/GzdAFwMW4AEB8kV?format=jpg&name=small",
+     link: "Pendent"
   },
   //       {
   //   id: 6,

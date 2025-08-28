@@ -88,7 +88,7 @@ const Cart = ({ isOpen, onClose }) => {
 
   return (
     <div
-      className={`fixed top-0 right-0 h-full z-50 bg-[#FFF2EB] shadow-2xl transition-transform duration-300
+      className={`fixed top-0 right-0 h-full z-50 bg-[#e0afaf] shadow-2xl transition-transform duration-300
         ${isOpen ? 'translate-x-0' : 'translate-x-full'}
         w-full md:w-[400px]`}
     >
@@ -157,7 +157,7 @@ const Cart = ({ isOpen, onClose }) => {
           )}
         </div>
 
-        <div className="p-4 border-t sticky bottom-0 bg-[#FFF2EB]">
+        <div className="p-4 border-t sticky bottom-0 bg-[#e0afaf]">
           <div className="flex justify-between items-center mb-3">
             <span className="text-sm text-gray-600">Total:</span>
             <span className="text-lg font-semibold text-[#141414]">
