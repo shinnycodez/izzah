@@ -54,7 +54,7 @@ const categories = [
                 {
     id: 5,
     title: "Hair pins ⋆⭒˚.⋆",
-    imageUrl:"https://pbs.twimg.com/media/Gzc_Av9XoAIXPkD?format=jpg&name=small",
+    imageUrl:"https://pbs.twimg.com/media/GzrbVpLXgAAOIr2?format=jpg&name=small",
      link: "Hair pins"
   },
                   {
@@ -66,7 +66,7 @@ const categories = [
                     {
     id: 5,
     title: "Pendent⋆⭒˚.⋆",
-    imageUrl:"https://pbs.twimg.com/media/GzdAEYoXAAAg5xT?format=jpg&name=small",
+    imageUrl:"https://pbs.twimg.com/media/GzrbTsIX0AAAyIQ?format=jpg&name=small",
      link: "Pendent"
   },
                       {
