@@ -16,7 +16,8 @@ const ProductPage = ({ onOpenCart }) => {
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
-  const [selectedVariation, setSelectedVariation] = useState(null);
+  const [selectedColor, setSelectedColor] = useState(null);
+  const [selectedSize, setSelectedSize] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -28,23 +29,37 @@ const ProductPage = ({ onOpenCart }) => {
         if (docSnap.exists()) {
           const productData = { id: docSnap.id, ...docSnap.data() };
           setProduct(productData);
-          // Set the first available variation as selected by default if variations exist
-          if (productData.variations && productData.variations.length > 0) {
-            const firstAvailableVariation = productData.variations.find(variation => {
-              if (typeof variation === 'string') return true; // Old format - assume available
-              return variation.inStock; // New format - check stock status
+          
+          // Set the first available color variation as selected by default
+          if (productData.colorVariations && productData.colorVariations.length > 0) {
+            const firstAvailableColor = productData.colorVariations.find(variation => {
+              if (typeof variation === 'string') return true;
+              return variation.inStock;
             });
-            
-            if (firstAvailableVariation) {
-              const variationName = typeof firstAvailableVariation === 'string' 
-                ? firstAvailableVariation 
-                : firstAvailableVariation.name;
-              setSelectedVariation(variationName);
+            if (firstAvailableColor) {
+              const colorName = typeof firstAvailableColor === 'string' 
+                ? firstAvailableColor 
+                : firstAvailableColor.name;
+              setSelectedColor(colorName);
+            }
+          }
+          
+          // Set the first available size variation as selected by default
+          if (productData.sizeVariations && productData.sizeVariations.length > 0) {
+            const firstAvailableSize = productData.sizeVariations.find(variation => {
+              if (typeof variation === 'string') return true;
+              return variation.inStock;
+            });
+            if (firstAvailableSize) {
+              const sizeName = typeof firstAvailableSize === 'string' 
+                ? firstAvailableSize 
+                : firstAvailableSize.name;
+              setSelectedSize(sizeName);
             }
           }
         } else {
           console.error('No such product!');
-          navigate('/'); // Redirect to home if product not found
+          navigate('/');
         }
       } catch (err) {
         console.error('Error fetching product: ', err);
@@ -76,36 +91,49 @@ const ProductPage = ({ onOpenCart }) => {
     }
   };
 
-  // Check if selected variation is in stock
-  const isSelectedVariationInStock = () => {
-    if (!selectedVariation || !product.variations) return true;
+  // Check if selected color is in stock
+  const isSelectedColorInStock = () => {
+    if (!selectedColor || !product.colorVariations) return true;
     
-    const variation = product.variations.find(v => {
-      const variationName = typeof v === 'string' ? v : v.name;
-      return variationName === selectedVariation;
+    const color = product.colorVariations.find(v => {
+      const colorName = typeof v === 'string' ? v : v.name;
+      return colorName === selectedColor;
     });
     
-    if (!variation) return false;
-    return typeof variation === 'string' ? true : variation.inStock;
+    if (!color) return false;
+    return typeof color === 'string' ? true : color.inStock;
   };
 
-  // Check if product or selected variation is available
+  // Check if selected size is in stock
+  const isSelectedSizeInStock = () => {
+    if (!selectedSize || !product.sizeVariations) return true;
+    
+    const size = product.sizeVariations.find(v => {
+      const sizeName = typeof v === 'string' ? v : v.name;
+      return sizeName === selectedSize;
+    });
+    
+    if (!size) return false;
+    return typeof size === 'string' ? true : size.inStock;
+  };
+
+  // Check if product or selected variations are available
   const isAvailableForPurchase = () => {
     if (!product.available) return false;
-    if (product.variations && product.variations.length > 0) {
-      return isSelectedVariationInStock();
-    }
-    return true;
+    
+    const colorAvailable = !product.colorVariations || product.colorVariations.length === 0 || isSelectedColorInStock();
+    const sizeAvailable = !product.sizeVariations || product.sizeVariations.length === 0 || isSelectedSizeInStock();
+    
+    return colorAvailable && sizeAvailable;
   };
 
   const handleAddToCart = async () => {
     if (loading || !isAvailableForPurchase()) return;
     setLoading(true);
 
-    // Create a unique identifier that includes the variation if it exists
-    const itemId = selectedVariation 
-      ? `${product.id}_${selectedVariation}_${Date.now()}`
-      : `${product.id}_${Date.now()}`;
+    // Create a unique identifier that includes both color and size variations
+    const variationString = `${selectedColor || 'no-color'}_${selectedSize || 'no-size'}`;
+    const itemId = `${product.id}_${variationString}_${Date.now()}`;
 
     const cartItem = {
       id: itemId,
@@ -114,7 +142,8 @@ const ProductPage = ({ onOpenCart }) => {
       price: product.price,
       image: product.coverImage,
       quantity,
-      variation: selectedVariation, // Include the selected variation
+      color: selectedColor, // Include selected color
+      size: selectedSize,   // Include selected size
       createdAt: new Date().toISOString(),
     };
 
@@ -125,25 +154,19 @@ const ProductPage = ({ onOpenCart }) => {
       // Check if item with same configuration already exists
       const existingIndex = currentCart.findIndex(item =>
         item.productId === cartItem.productId && 
-        item.variation === cartItem.variation
+        item.color === cartItem.color &&
+        item.size === cartItem.size
       );
 
       if (existingIndex !== -1) {
-        // Update quantity of existing item
         currentCart[existingIndex].quantity += quantity;
       } else {
-        // Add new item to cart
         currentCart.push(cartItem);
       }
 
-      // Save updated cart
       saveCartToStorage(currentCart);
-
-      // Show success message
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 2500);
-
-      // Open cart if callback provided
       if (onOpenCart) onOpenCart();
 
     } catch (error) {
@@ -164,12 +187,12 @@ const ProductPage = ({ onOpenCart }) => {
       price: product.price,
       image: product.coverImage,
       quantity,
-      variation: selectedVariation, // Include the selected variation
+      color: selectedColor, // Include selected color
+      size: selectedSize,   // Include selected size
       createdAt: new Date().toISOString(),
     };
 
     try {
-      // Store buy now item for checkout
       sessionStorage.setItem('buyNowItem', JSON.stringify(buyNowItem));
       navigate('/buynowcheckout');
     } catch (error) {
@@ -231,10 +254,18 @@ const ProductPage = ({ onOpenCart }) => {
             
             {/* Stock Status Display */}
             {product.available ? (
-              product.variations && product.variations.length > 0 ? (
+              (product.colorVariations && product.colorVariations.length > 0) || 
+              (product.sizeVariations && product.sizeVariations.length > 0) ? (
                 <div className="px-4">
-                  {selectedVariation && !isSelectedVariationInStock() ? (
-                    <p className="text-red-600 font-medium">Selected color is out of stock</p>
+                  {!isAvailableForPurchase() ? (
+                    <p className="text-red-600 font-medium">
+                      {!isSelectedColorInStock() && !isSelectedSizeInStock() 
+                        ? 'Selected color and size are out of stock'
+                        : !isSelectedColorInStock() 
+                        ? 'Selected color is out of stock'
+                        : 'Selected size is out of stock'
+                      }
+                    </p>
                   ) : (
                     <p className="text-green-600 font-medium">In Stock</p>
                   )}
@@ -246,12 +277,12 @@ const ProductPage = ({ onOpenCart }) => {
               <p className="text-red-600 font-medium px-4">Will be available soon</p>
             )}
 
-            {/* Color Variations Selector - Simplified */}
-            {product.variations && product.variations.length > 0 && (
+            {/* Color Variations Selector */}
+            {product.colorVariations && product.colorVariations.length > 0 && (
               <div className="px-4 py-3">
                 <h3 className="text-sm font-medium text-gray-900 mb-2">Color:</h3>
                 <div className="flex flex-wrap gap-2">
-                  {product.variations.map((variation, index) => {
+                  {product.colorVariations.map((variation, index) => {
                     const variationName = typeof variation === 'string' ? variation : variation.name;
                     const isInStock = typeof variation === 'string' ? true : variation.inStock;
                     
@@ -259,10 +290,43 @@ const ProductPage = ({ onOpenCart }) => {
                       <button
                         key={index}
                         type="button"
-                        onClick={() => isInStock && setSelectedVariation(variationName)}
+                        onClick={() => isInStock && setSelectedColor(variationName)}
                         disabled={!isInStock}
                         className={`px-3 py-1 rounded-full text-sm border transition-all duration-200 ${
-                          selectedVariation === variationName
+                          selectedColor === variationName
+                            ? isInStock 
+                              ? 'bg-black text-white border-black'
+                              : 'bg-gray-300 text-gray-500 border-gray-300'
+                            : isInStock
+                              ? 'bg-white text-gray-800 border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                              : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-50'
+                        }`}
+                      >
+                        {variationName}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Size Variations Selector */}
+            {product.sizeVariations && product.sizeVariations.length > 0 && (
+              <div className="px-4 py-3">
+                <h3 className="text-sm font-medium text-gray-900 mb-2">Size:</h3>
+                <div className="flex flex-wrap gap-2">
+                  {product.sizeVariations.map((variation, index) => {
+                    const variationName = typeof variation === 'string' ? variation : variation.name;
+                    const isInStock = typeof variation === 'string' ? true : variation.inStock;
+                    
+                    return (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => isInStock && setSelectedSize(variationName)}
+                        disabled={!isInStock}
+                        className={`px-3 py-1 rounded-full text-sm border transition-all duration-200 ${
+                          selectedSize === variationName
                             ? isInStock 
                               ? 'bg-black text-white border-black'
                               : 'bg-gray-300 text-gray-500 border-gray-300'
@@ -300,7 +364,7 @@ const ProductPage = ({ onOpenCart }) => {
                     Adding...
                   </span>
                 ) : !availableForPurchase ? (
-                  selectedVariation && !isSelectedVariationInStock() ? 'Selected Color Out of Stock' : 'Will be availalable soon'
+                  'Selected Option Out of Stock'
                 ) : (
                   'Add to Cart'
                 )}
@@ -316,7 +380,7 @@ const ProductPage = ({ onOpenCart }) => {
                 }`}
               >
                 {!availableForPurchase ? (
-                  selectedVariation && !isSelectedVariationInStock() ? 'Selected Color Out of Stock' : 'Out of Stock'
+                  'Selected Option Out of Stock'
                 ) : (
                   'Buy Now'
                 )}

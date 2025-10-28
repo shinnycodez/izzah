@@ -126,7 +126,7 @@ const Cart = ({ isOpen, onClose }) => {
                   )}
                   
                   <p className="text-xs text-gray-500 mt-1">
-                    {item.type && `${item.type} |`} {item.size} {item.lining ? '| Lining' : ''}
+                    {item.type && `${item.type} |`} {item.size} {item.color} {item.lining ? '| Lining' : ''}
                   </p>
                   
                   <div className="flex items-center gap-2 mt-2">

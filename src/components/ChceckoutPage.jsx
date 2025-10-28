@@ -71,19 +71,28 @@ const CheckoutPage = () => {
     } else if (form.paymentMethod === 'Cash on Delivery') {
       const city = form.city.toLowerCase().trim();
       if (city === 'lahore' || city === 'sialkot') {
-        return 280;
+        return 300; // Updated to 300
       } else if (city === 'karachi') {
-        return 380;
+        return 390; // Updated to 390
       } else {
-        return 350; // Other cities
+        return 360; // Updated to 360 for other cities
       }
     }
     return 150; // Default fallback
   };
 
+  // Calculate sales tax (4% for COD only)
+  const calculateSalesTax = () => {
+    if (form.paymentMethod === 'Cash on Delivery') {
+      return subtotal * 0.04; // 4% sales tax
+    }
+    return 0; // No sales tax for EasyPaisa
+  };
+
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0);
   const shippingCost = calculateShippingCost();
-  const total = subtotal + shippingCost;
+  const salesTax = calculateSalesTax();
+  const total = subtotal + shippingCost + salesTax;
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -200,16 +209,18 @@ const CheckoutPage = () => {
       customerType: 'guest', // Mark as guest order
       customerEmail: form.email,
       items: cartItems.map(item => ({
-        productId: item.productId || item.id,
-        title: item.title,
-        quantity: item.quantity || 1,
-        price: item.price,
-        image: item.image || item.coverImage,
-        // Store variation details
-        variation: item.variation || null,
-        type: item.type || null,
-        size: item.size || null,
-        lining: item.lining || false,
+    productId: item.productId || item.id,
+    title: item.title,
+    quantity: item.quantity || 1,
+    price: item.price,
+    image: item.image || item.coverImage,
+    // Store both color and size variations
+    color: item.color || null,
+    size: item.size || null,
+    // Keep old variation for backward compatibility
+    variation: item.variation || null,
+    type: item.type || null,
+    lining: item.lining || false,
       })),
       shipping: form.shippingMethod,
       payment: form.paymentMethod,
@@ -226,6 +237,7 @@ const CheckoutPage = () => {
       notes: form.notes,
       subtotal,
       shippingCost,
+      salesTax,
       total,
       createdAt: new Date(),
       status: 'processing',
@@ -263,16 +275,16 @@ const CheckoutPage = () => {
     } else if (form.paymentMethod === 'Cash on Delivery') {
       const city = form.city.toLowerCase().trim();
       if (city === 'lahore' || city === 'sialkot') {
-        return 'PKR 280 - Lahore & Sialkot';
+        return 'PKR 300 - Lahore & Sialkot';
       } else if (city === 'karachi') {
-        return 'PKR 380 - Karachi';
+        return 'PKR 390 - Karachi';
       } else if (form.city) {
-        return 'PKR 350 - Other Cities';
+        return 'PKR 360 - Other Cities';
       } else {
-        return 'PKR 280-380 - Varies by city';
+        return 'PKR 300-390 - Varies by city';
       }
     }
-    return 'PKR 150-380 - Based on payment method and city';
+    return 'PKR 150-390 - Based on payment method and city';
   };
 
   // Show empty cart message if no items
@@ -472,6 +484,7 @@ const CheckoutPage = () => {
                   <div className="ml-3">
                     <span className="font-medium text-gray-900 text-sm sm:text-base">EasyPaisa</span>
                     <p className="text-xs text-gray-500">Pay online - Lower delivery charges (PKR 150)</p>
+                    <p className="text-xs text-green-600">No sales tax applied</p>
                   </div>
                 </label>
 
@@ -488,6 +501,7 @@ const CheckoutPage = () => {
                   <div className="ml-3">
                     <span className="font-medium text-gray-900 text-sm sm:text-base">Cash on Delivery</span>
                     <p className="text-xs text-gray-500">Pay advance delivery charges - Higher delivery charges</p>
+                    <p className="text-xs text-orange-600">+4% sales tax applies</p>
                   </div>
                 </label>
               </div>
@@ -545,7 +559,7 @@ const CheckoutPage = () => {
                     <li><strong>Amount to Send:</strong> PKR {shippingCost.toLocaleString()} (Delivery Charges)</li>
                   </ul>
                   <p className="text-gray-700 mb-4 text-sm sm:text-base">
-                    After paying the advance delivery charges, upload a screenshot of the transaction. You'll pay the remaining product amount (PKR {subtotal.toLocaleString()}) when the order is delivered.
+                    After paying the advance delivery charges, upload a screenshot of the transaction. You'll pay the remaining product amount plus 4% sales tax (PKR {(subtotal + salesTax).toLocaleString()}) when the order is delivered.
                   </p>
                   <div>
                     <label htmlFor="bankTransferProof" className="block text-sm font-medium text-gray-700 mb-1">
@@ -613,47 +627,71 @@ const CheckoutPage = () => {
             <div className="bg-[#fefaf9] p-6 rounded-lg shadow-sm h-fit lg:sticky lg:top-8">
               <h2 className="text-lg sm:text-xl font-semibold mb-6 pb-2 border-b">Order Summary</h2>
               
-              <div className="space-y-4 mb-6">
-                {cartItems.map((item, index) => (
-                  <div key={item.id || index} className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-                    <div className="flex gap-4 mb-2 sm:mb-0">
-                      <img
-                        src={item.image || item.coverImage}
-                        alt={item.title}
-                        className="w-16 h-20 sm:w-20 sm:h-25 object-cover object-top rounded"
-                      />
-                      <div>
-                        <p className="font-medium text-gray-900 text-sm sm:text-base">{item.title}</p>
-                        
-                        {/* Display variation (color) if it exists */}
-                        {item.variation && (
-                          <div className="flex items-center gap-1 mt-1">
-                            <span className="text-xs text-gray-500">Color:</span>
-                            <span className="text-xs font-medium text-gray-700">{item.variation}</span>
-                            {/* Optional: Show a small color swatch */}
-                            <div 
-                              className="w-3 h-3 rounded-full border border-gray-200"
-                              style={{ 
-                                backgroundColor: item.variation.toLowerCase(),
-                                display: /^#[0-9A-F]{6}$/i.test(item.variation) ? 'block' : 'none'
-                              }}
-                              title={item.variation}
-                            />
-                          </div>
-                        )}
-                        
-                        <p className="text-xs sm:text-sm text-gray-500">
-                          {item.type && `${item.type} |`} {item.size} {item.lining ? '| Lining' : ''}
-                        </p>
-                        <p className="text-xs sm:text-sm text-gray-500">Qty: {item.quantity || 1}</p>
-                      </div>
-                    </div>
-                    <p className="font-medium text-sm sm:text-base">
-                      PKR {(item.price * (item.quantity || 1)).toLocaleString()}
-                    </p>
-                  </div>
-                ))}
-              </div>
+<div className="space-y-4 mb-6">
+  {cartItems.map((item, index) => (
+    <div key={item.id || index} className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+      <div className="flex gap-4 mb-2 sm:mb-0">
+        <img
+          src={item.image || item.coverImage}
+          alt={item.title}
+          className="w-16 h-20 sm:w-20 sm:h-25 object-cover object-top rounded"
+        />
+        <div>
+          <p className="font-medium text-gray-900 text-sm sm:text-base">{item.title}</p>
+          
+          {/* Display color variation if it exists */}
+          {item.color && (
+            <div className="flex items-center gap-1 mt-1">
+              <span className="text-xs text-gray-500">Color:</span>
+              <span className="text-xs font-medium text-gray-700">{item.color}</span>
+              {/* Optional: Show a small color swatch */}
+              <div 
+                className="w-3 h-3 rounded-full border border-gray-200"
+                style={{ 
+                  backgroundColor: item.color.toLowerCase(),
+                  display: /^#[0-9A-F]{6}$/i.test(item.color) ? 'block' : 'none'
+                }}
+                title={item.color}
+              />
+            </div>
+          )}
+          
+          {/* Display size variation if it exists */}
+          {item.size && (
+            <div className="flex items-center gap-1 mt-1">
+              <span className="text-xs text-gray-500">Size:</span>
+              <span className="text-xs font-medium text-gray-700">{item.size}</span>
+            </div>
+          )}
+          
+          {/* Display old variation format for backward compatibility */}
+          {item.variation && !item.color && (
+            <div className="flex items-center gap-1 mt-1">
+              <span className="text-xs text-gray-500">Color:</span>
+              <span className="text-xs font-medium text-gray-700">{item.variation}</span>
+              <div 
+                className="w-3 h-3 rounded-full border border-gray-200"
+                style={{ 
+                  backgroundColor: item.variation.toLowerCase(),
+                  display: /^#[0-9A-F]{6}$/i.test(item.variation) ? 'block' : 'none'
+                }}
+                title={item.variation}
+              />
+            </div>
+          )}
+          
+          <p className="text-xs sm:text-sm text-gray-500">
+            {item.type && `${item.type}`} {item.lining ? '| Lining' : ''}
+          </p>
+          <p className="text-xs sm:text-sm text-gray-500">Qty: {item.quantity || 1}</p>
+        </div>
+      </div>
+      <p className="font-medium text-sm sm:text-base">
+        PKR {(item.price * (item.quantity || 1)).toLocaleString()}
+      </p>
+    </div>
+  ))}
+</div>
 
               <div className="space-y-3 border-t border-gray-200 pt-4">
                 <div className="flex justify-between">
@@ -665,6 +703,14 @@ const CheckoutPage = () => {
                   <span className="text-sm text-gray-600">Shipping</span>
                   <span className="text-sm">PKR {shippingCost.toLocaleString()}</span>
                 </div>
+
+                {/* Show sales tax only for COD */}
+                {form.paymentMethod === 'Cash on Delivery' && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Sales Tax (4%)</span>
+                    <span className="text-sm">PKR {salesTax.toLocaleString()}</span>
+                  </div>
+                )}
                 
                 {form.promoCode && (
                   <div className="flex justify-between">
@@ -684,7 +730,8 @@ const CheckoutPage = () => {
                       </div>
                       <div className="flex justify-between">
                         <span>Cash on Delivery:</span>
-                        <span>PKR {subtotal.toLocaleString()}</span>
+                        <span>PKR {(subtotal + salesTax).toLocaleString()}</span>
+                        <span className="text-xs text-gray-500">(Products + 4% tax)</span>
                       </div>
                     </div>
                   </div>
@@ -719,7 +766,7 @@ const CheckoutPage = () => {
               <div className="mt-6 text-center text-xs sm:text-sm text-gray-500">
                 <p>100% secure checkout</p>
                 {form.paymentMethod === 'Cash on Delivery' && (
-                  <p className="mt-1">Pay advance delivery charges now, product amount on delivery</p>
+                  <p className="mt-1">Pay advance delivery charges now, product amount + 4% tax on delivery</p>
                 )}
               </div>
             </div>

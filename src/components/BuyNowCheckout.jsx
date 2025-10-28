@@ -53,19 +53,28 @@ const BuyNowCheckout = () => {
     } else if (form.paymentMethod === 'Cash on Delivery') {
       const city = form.city.toLowerCase().trim();
       if (city === 'lahore' || city === 'sialkot') {
-        return 280;
+        return 300; // Updated to 300
       } else if (city === 'karachi') {
-        return 380;
+        return 390; // Updated to 390
       } else {
-        return 350; // Other cities
+        return 360; // Updated to 360 for other cities
       }
     }
     return 150; // Default fallback
   };
 
+  // Calculate sales tax (4% for COD only)
+  const calculateSalesTax = () => {
+    if (form.paymentMethod === 'Cash on Delivery') {
+      return subtotal * 0.04; // 4% sales tax
+    }
+    return 0; // No sales tax for EasyPaisa
+  };
+
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0);
   const shippingCost = calculateShippingCost();
-  const total = subtotal + shippingCost;
+  const salesTax = calculateSalesTax();
+  const total = subtotal + shippingCost + salesTax;
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -184,6 +193,7 @@ const BuyNowCheckout = () => {
         variation: item.variation || null,
         type: item.type || null,
         size: item.size || null,
+        color: item.color || null,
         lining: item.lining || false,
       })),
       shipping: form.shippingMethod,
@@ -201,6 +211,7 @@ const BuyNowCheckout = () => {
       notes: form.notes,
       subtotal,
       shippingCost,
+      salesTax,
       total,
       createdAt: new Date(),
       status: 'processing',
@@ -239,16 +250,16 @@ const BuyNowCheckout = () => {
     } else if (form.paymentMethod === 'Cash on Delivery') {
       const city = form.city.toLowerCase().trim();
       if (city === 'lahore' || city === 'sialkot') {
-        return 'PKR 280 - Lahore & Sialkot';
+        return 'PKR 300 - Lahore & Sialkot';
       } else if (city === 'karachi') {
-        return 'PKR 380 - Karachi';
+        return 'PKR 390 - Karachi';
       } else if (form.city) {
-        return 'PKR 350 - Other Cities';
+        return 'PKR 360 - Other Cities';
       } else {
-        return 'PKR 280-380 - Varies by city';
+        return 'PKR 300-390 - Varies by city';
       }
     }
-    return 'PKR 150-380 - Based on payment method and city';
+    return 'PKR 150-390 - Based on payment method and city';
   };
 
   // Show loading if product is not loaded yet
@@ -447,6 +458,7 @@ const BuyNowCheckout = () => {
                   <div className="ml-3">
                     <span className="font-medium text-gray-900 text-sm sm:text-base">EasyPaisa</span>
                     <p className="text-xs text-gray-500">Pay online - Lower delivery charges (PKR 150)</p>
+                    <p className="text-xs text-green-600">No sales tax applied</p>
                   </div>
                 </label>
 
@@ -463,6 +475,7 @@ const BuyNowCheckout = () => {
                   <div className="ml-3">
                     <span className="font-medium text-gray-900 text-sm sm:text-base">Cash on Delivery</span>
                     <p className="text-xs text-gray-500">Pay advance delivery charges - Higher delivery charges</p>
+                    <p className="text-xs text-orange-600">+4% sales tax applies</p>
                   </div>
                 </label>
               </div>
@@ -520,7 +533,7 @@ const BuyNowCheckout = () => {
                     <li><strong>Amount to Send:</strong> PKR {shippingCost.toLocaleString()} (Delivery Charges)</li>
                   </ul>
                   <p className="text-gray-700 mb-4 text-sm sm:text-base">
-                    After paying the advance delivery charges, upload a screenshot of the transaction. You'll pay the remaining product amount (PKR {subtotal.toLocaleString()}) when the order is delivered.
+                    After paying the advance delivery charges, upload a screenshot of the transaction. You'll pay the remaining product amount plus 4% sales tax (PKR {(subtotal + salesTax).toLocaleString()}) when the order is delivered.
                   </p>
                   <div>
                     <label htmlFor="bankTransferProof" className="block text-sm font-medium text-gray-700 mb-1">
@@ -620,6 +633,9 @@ const BuyNowCheckout = () => {
                         <p className="text-xs sm:text-sm text-gray-500">
                           {item.type && `${item.type} |`} {item.size} {item.lining ? '| Lining' : ''}
                         </p>
+                          <p className="text-xs sm:text-sm text-gray-500">
+                          {item.type && `${item.type} |`} {item.color} {item.lining ? '| Lining' : ''}
+                        </p>
                         <p className="text-xs sm:text-sm text-gray-500">Qty: {item.quantity || 1}</p>
                       </div>
                     </div>
@@ -640,6 +656,14 @@ const BuyNowCheckout = () => {
                   <span className="text-sm text-gray-600">Shipping</span>
                   <span className="text-sm">PKR {shippingCost.toLocaleString()}</span>
                 </div>
+
+                {/* Show sales tax only for COD */}
+                {form.paymentMethod === 'Cash on Delivery' && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Sales Tax (4%)</span>
+                    <span className="text-sm">PKR {salesTax.toLocaleString()}</span>
+                  </div>
+                )}
                 
                 {form.promoCode && (
                   <div className="flex justify-between">
@@ -659,7 +683,8 @@ const BuyNowCheckout = () => {
                       </div>
                       <div className="flex justify-between">
                         <span>Cash on Delivery:</span>
-                        <span>PKR {subtotal.toLocaleString()}</span>
+                        <span>PKR {(subtotal + salesTax).toLocaleString()}</span>
+                        <span className="text-xs text-gray-500">(Products + 4% tax)</span>
                       </div>
                     </div>
                   </div>
@@ -694,7 +719,7 @@ const BuyNowCheckout = () => {
               <div className="mt-6 text-center text-xs sm:text-sm text-gray-500">
                 <p>100% secure checkout</p>
                 {form.paymentMethod === 'Cash on Delivery' && (
-                  <p className="mt-1">Pay advance delivery charges now, product amount on delivery</p>
+                  <p className="mt-1">Pay advance delivery charges now, product amount + 4% tax on delivery</p>
                 )}
               </div>
             </div>

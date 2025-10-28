@@ -71,9 +71,9 @@ const categories = [
   },
                       {
     id: 5,
-    title: "Raw materials ⋆⭒˚.⋆",
-    imageUrl:"https://pbs.twimg.com/media/GzdAFwMW4AEB8kV?format=jpg&name=small",
-     link: "Raw materials"
+    title: "Others ⋆⭒˚.⋆",
+    imageUrl:"https://pbs.twimg.com/media/G4XORmKaIAAQQk4?format=png&name=small",
+     link: "Others "
   },
   //       {
   //   id: 6,
