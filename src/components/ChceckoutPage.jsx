@@ -29,6 +29,12 @@ const CheckoutPage = () => {
   const [errors, setErrors] = useState({});
   const [bankTransferProofBase64, setBankTransferProofBase64] = useState(null);
   const [convertingImage, setConvertingImage] = useState(false);
+  
+  // Promo code states
+  const [promoApplied, setPromoApplied] = useState(false);
+  const [discount, setDiscount] = useState(0);
+  const [promoError, setPromoError] = useState('');
+  const [promoSuccess, setPromoSuccess] = useState('');
 
   // Load cart items from localStorage or session storage
   useEffect(() => {
@@ -92,7 +98,10 @@ const CheckoutPage = () => {
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0);
   const shippingCost = calculateShippingCost();
   const salesTax = calculateSalesTax();
-  const total = subtotal + shippingCost + salesTax;
+  
+  // Calculate total with discount
+  const discountedSubtotal = subtotal - discount;
+  const total = Math.max(0, discountedSubtotal + shippingCost + salesTax);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -143,6 +152,75 @@ const CheckoutPage = () => {
       setBankTransferProofBase64(null);
       setErrors(prev => ({ ...prev, bankTransferProof: '' }));
     }
+  };
+
+  // Validate promo code
+  const validatePromoCode = (code) => {
+    const validCodes = [
+      {
+        code: 'IJS12',
+        discountPercent: 12,
+        validFrom: new Date('2026-01-01'), // Set your start date
+        validTo: new Date(new Date().getTime() + (5 * 24 * 60 * 60 * 1000)) // 5 days from now
+      }
+      // Add more promo codes here as needed
+    ];
+
+    const promo = validCodes.find(p => p.code.toUpperCase() === code.toUpperCase());
+    
+    if (!promo) {
+      return { valid: false, message: 'Invalid promo code' };
+    }
+
+    const now = new Date();
+    if (now < promo.validFrom) {
+      return { valid: false, message: 'Promo code not yet active' };
+    }
+
+    if (now > promo.validTo) {
+      return { valid: false, message: 'Promo code has expired' };
+    }
+
+    return {
+      valid: true,
+      discountPercent: promo.discountPercent,
+      message: `Promo code applied! You get ${promo.discountPercent}% off`
+    };
+  };
+
+  // Apply promo code
+  const applyPromoCode = () => {
+    if (!form.promoCode.trim()) {
+      setPromoError('Please enter a promo code');
+      setPromoSuccess('');
+      return;
+    }
+
+    const validation = validatePromoCode(form.promoCode);
+    
+    if (!validation.valid) {
+      setPromoError(validation.message);
+      setPromoSuccess('');
+      setPromoApplied(false);
+      setDiscount(0);
+      return;
+    }
+
+    // Calculate discount amount
+    const discountAmount = (subtotal * validation.discountPercent) / 100;
+    setDiscount(discountAmount);
+    setPromoApplied(true);
+    setPromoSuccess(validation.message);
+    setPromoError('');
+  };
+
+  // Remove promo code
+  const removePromoCode = () => {
+    setPromoApplied(false);
+    setDiscount(0);
+    setForm(prev => ({ ...prev, promoCode: '' }));
+    setPromoSuccess('');
+    setPromoError('');
   };
 
   const validateForm = () => {
@@ -209,18 +287,18 @@ const CheckoutPage = () => {
       customerType: 'guest', // Mark as guest order
       customerEmail: form.email,
       items: cartItems.map(item => ({
-    productId: item.productId || item.id,
-    title: item.title,
-    quantity: item.quantity || 1,
-    price: item.price,
-    image: item.image || item.coverImage,
-    // Store both color and size variations
-    color: item.color || null,
-    size: item.size || null,
-    // Keep old variation for backward compatibility
-    variation: item.variation || null,
-    type: item.type || null,
-    lining: item.lining || false,
+        productId: item.productId || item.id,
+        title: item.title,
+        quantity: item.quantity || 1,
+        price: item.price,
+        image: item.image || item.coverImage,
+        // Store both color and size variations
+        color: item.color || null,
+        size: item.size || null,
+        // Keep old variation for backward compatibility
+        variation: item.variation || null,
+        type: item.type || null,
+        lining: item.lining || false,
       })),
       shipping: form.shippingMethod,
       payment: form.paymentMethod,
@@ -234,8 +312,11 @@ const CheckoutPage = () => {
         country: form.country,
       },
       promoCode: form.promoCode,
+      discountApplied: discount,
+      discountPercent: promoApplied ? 12 : 0,
       notes: form.notes,
       subtotal,
+      discount,
       shippingCost,
       salesTax,
       total,
@@ -543,7 +624,7 @@ const CheckoutPage = () => {
                         Converting image...
                       </p>
                     )}
-                </div>
+                  </div>
                 </div>
               )}
 
@@ -559,7 +640,7 @@ const CheckoutPage = () => {
                     <li><strong>Amount to Send:</strong> PKR {shippingCost.toLocaleString()} (Delivery Charges)</li>
                   </ul>
                   <p className="text-gray-700 mb-4 text-sm sm:text-base">
-                    After paying the advance delivery charges, upload a screenshot of the transaction. You'll pay the remaining product amount plus 4% sales tax (PKR {(subtotal + salesTax).toLocaleString()}) when the order is delivered.
+                    After paying the advance delivery charges, upload a screenshot of the transaction. You'll pay the remaining product amount plus 4% sales tax (PKR {(discountedSubtotal + salesTax).toLocaleString()}) when the order is delivered.
                   </p>
                   <div>
                     <label htmlFor="bankTransferProof" className="block text-sm font-medium text-gray-700 mb-1">
@@ -585,28 +666,73 @@ const CheckoutPage = () => {
                         Converting image...
                       </p>
                     )}
-                </div>
+                  </div>
                 </div>
               )}
 
               <div className="mt-6">
                 <label htmlFor="promoCode" className="block text-sm font-medium text-gray-700 mb-1">Promo Code</label>
-                <div className="flex">
+                <div className="flex mb-2">
                   <input 
                     id="promoCode"
                     name="promoCode" 
                     value={form.promoCode}
                     onChange={handleChange}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-l-md focus:ring-black focus:border-black text-sm sm:text-base"
-                    placeholder="Enter promo code"
+                    disabled={promoApplied}
+                    className={`flex-1 px-4 py-2 border border-gray-300 rounded-l-md focus:ring-black focus:border-black text-sm sm:text-base ${promoApplied ? 'bg-gray-100' : ''}`}
+                    placeholder={promoApplied ? "IJS12 applied" : "Enter promo code"}
                   />
-                  <button 
-                    type="button"
-                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded-r-md hover:bg-gray-300 transition text-sm sm:text-base"
-                  >
-                    Apply
-                  </button>
+                  {promoApplied ? (
+                    <button 
+                      type="button"
+                      onClick={removePromoCode}
+                      className="px-4 py-2 bg-red-600 text-white rounded-r-md hover:bg-red-700 transition text-sm sm:text-base"
+                    >
+                      Remove
+                    </button>
+                  ) : (
+                    <button 
+                      type="button"
+                      onClick={applyPromoCode}
+                      className="px-4 py-2 bg-gray-800 text-white rounded-r-md hover:bg-black transition text-sm sm:text-base"
+                    >
+                      Apply
+                    </button>
+                  )}
                 </div>
+                
+                {/* Promo code messages */}
+                {promoSuccess && (
+                  <div className="p-3 mb-4 bg-green-50 border border-green-200 rounded-md">
+                    <div className="flex items-center">
+                      <svg className="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
+                      <p className="text-sm text-green-700 font-medium">{promoSuccess}</p>
+                    </div>
+                    <p className="text-xs text-green-600 mt-1">Valid for 5 days from activation</p>
+                  </div>
+                )}
+                
+                {promoError && (
+                  <div className="p-3 mb-4 bg-red-50 border border-red-200 rounded-md">
+                    <div className="flex items-center">
+                      <svg className="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                      </svg>
+                      <p className="text-sm text-red-700 font-medium">{promoError}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Current promo info */}
+                {!promoApplied && (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                    <p className="text-sm text-blue-700 font-medium">Available Promo Code:</p>
+                    <p className="text-sm text-blue-600">Use <span className="font-bold">IJS12</span> for 12% off</p>
+                    <p className="text-xs text-blue-500 mt-1">Valid for 5 days</p>
+                  </div>
+                )}
               </div>
 
               <div className="mt-6">
@@ -627,77 +753,85 @@ const CheckoutPage = () => {
             <div className="bg-[#fefaf9] p-6 rounded-lg shadow-sm h-fit lg:sticky lg:top-8">
               <h2 className="text-lg sm:text-xl font-semibold mb-6 pb-2 border-b">Order Summary</h2>
               
-<div className="space-y-4 mb-6">
-  {cartItems.map((item, index) => (
-    <div key={item.id || index} className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-      <div className="flex gap-4 mb-2 sm:mb-0">
-        <img
-          src={item.image || item.coverImage}
-          alt={item.title}
-          className="w-16 h-20 sm:w-20 sm:h-25 object-cover object-top rounded"
-        />
-        <div>
-          <p className="font-medium text-gray-900 text-sm sm:text-base">{item.title}</p>
-          
-          {/* Display color variation if it exists */}
-          {item.color && (
-            <div className="flex items-center gap-1 mt-1">
-              <span className="text-xs text-gray-500">Color:</span>
-              <span className="text-xs font-medium text-gray-700">{item.color}</span>
-              {/* Optional: Show a small color swatch */}
-              <div 
-                className="w-3 h-3 rounded-full border border-gray-200"
-                style={{ 
-                  backgroundColor: item.color.toLowerCase(),
-                  display: /^#[0-9A-F]{6}$/i.test(item.color) ? 'block' : 'none'
-                }}
-                title={item.color}
-              />
-            </div>
-          )}
-          
-          {/* Display size variation if it exists */}
-          {item.size && (
-            <div className="flex items-center gap-1 mt-1">
-              <span className="text-xs text-gray-500">Size:</span>
-              <span className="text-xs font-medium text-gray-700">{item.size}</span>
-            </div>
-          )}
-          
-          {/* Display old variation format for backward compatibility */}
-          {item.variation && !item.color && (
-            <div className="flex items-center gap-1 mt-1">
-              <span className="text-xs text-gray-500">Color:</span>
-              <span className="text-xs font-medium text-gray-700">{item.variation}</span>
-              <div 
-                className="w-3 h-3 rounded-full border border-gray-200"
-                style={{ 
-                  backgroundColor: item.variation.toLowerCase(),
-                  display: /^#[0-9A-F]{6}$/i.test(item.variation) ? 'block' : 'none'
-                }}
-                title={item.variation}
-              />
-            </div>
-          )}
-          
-          <p className="text-xs sm:text-sm text-gray-500">
-            {item.type && `${item.type}`} {item.lining ? '| Lining' : ''}
-          </p>
-          <p className="text-xs sm:text-sm text-gray-500">Qty: {item.quantity || 1}</p>
-        </div>
-      </div>
-      <p className="font-medium text-sm sm:text-base">
-        PKR {(item.price * (item.quantity || 1)).toLocaleString()}
-      </p>
-    </div>
-  ))}
-</div>
+              <div className="space-y-4 mb-6">
+                {cartItems.map((item, index) => (
+                  <div key={item.id || index} className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                    <div className="flex gap-4 mb-2 sm:mb-0">
+                      <img
+                        src={item.image || item.coverImage}
+                        alt={item.title}
+                        className="w-16 h-20 sm:w-20 sm:h-25 object-cover object-top rounded"
+                      />
+                      <div>
+                        <p className="font-medium text-gray-900 text-sm sm:text-base">{item.title}</p>
+                        
+                        {/* Display color variation if it exists */}
+                        {item.color && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <span className="text-xs text-gray-500">Color:</span>
+                            <span className="text-xs font-medium text-gray-700">{item.color}</span>
+                            {/* Optional: Show a small color swatch */}
+                            <div 
+                              className="w-3 h-3 rounded-full border border-gray-200"
+                              style={{ 
+                                backgroundColor: item.color.toLowerCase(),
+                                display: /^#[0-9A-F]{6}$/i.test(item.color) ? 'block' : 'none'
+                              }}
+                              title={item.color}
+                            />
+                          </div>
+                        )}
+                        
+                        {/* Display size variation if it exists */}
+                        {item.size && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <span className="text-xs text-gray-500">Size:</span>
+                            <span className="text-xs font-medium text-gray-700">{item.size}</span>
+                          </div>
+                        )}
+                        
+                        {/* Display old variation format for backward compatibility */}
+                        {item.variation && !item.color && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <span className="text-xs text-gray-500">Color:</span>
+                            <span className="text-xs font-medium text-gray-700">{item.variation}</span>
+                            <div 
+                              className="w-3 h-3 rounded-full border border-gray-200"
+                              style={{ 
+                                backgroundColor: item.variation.toLowerCase(),
+                                display: /^#[0-9A-F]{6}$/i.test(item.variation) ? 'block' : 'none'
+                              }}
+                              title={item.variation}
+                            />
+                          </div>
+                        )}
+                        
+                        <p className="text-xs sm:text-sm text-gray-500">
+                          {item.type && `${item.type}`} {item.lining ? '| Lining' : ''}
+                        </p>
+                        <p className="text-xs sm:text-sm text-gray-500">Qty: {item.quantity || 1}</p>
+                      </div>
+                    </div>
+                    <p className="font-medium text-sm sm:text-base">
+                      PKR {(item.price * (item.quantity || 1)).toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
 
               <div className="space-y-3 border-t border-gray-200 pt-4">
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Subtotal</span>
                   <span className="text-sm">PKR {subtotal.toLocaleString()}</span>
                 </div>
+                
+                {/* Show discount if applied */}
+                {promoApplied && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Discount (12%)</span>
+                    <span className="text-sm text-green-600">-PKR {discount.toLocaleString()}</span>
+                  </div>
+                )}
                 
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Shipping</span>
@@ -711,32 +845,25 @@ const CheckoutPage = () => {
                     <span className="text-sm">PKR {salesTax.toLocaleString()}</span>
                   </div>
                 )}
-                
-                {form.promoCode && (
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Discount</span>
-                    <span className="text-sm text-green-600">-PKR 0</span>
-                  </div>
-                )}
+              </div>
 
-                {/* Show COD payment breakdown */}
-                {form.paymentMethod === 'Cash on Delivery' && (
-                  <div className="mt-4 p-3 bg-gray-50 rounded-md border">
-                    <h4 className="text-sm font-medium text-gray-900 mb-2">Payment Breakdown:</h4>
-                    <div className="space-y-1 text-xs text-gray-600">
-                      <div className="flex justify-between">
-                        <span>Advance (Delivery Charges):</span>
-                        <span>PKR {shippingCost.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Cash on Delivery:</span>
-                        <span>PKR {(subtotal + salesTax).toLocaleString()}</span>
-                        <span className="text-xs text-gray-500">(Products + 4% tax)</span>
-                      </div>
+              {/* Show COD payment breakdown */}
+              {form.paymentMethod === 'Cash on Delivery' && (
+                <div className="mt-4 p-3 bg-gray-50 rounded-md border">
+                  <h4 className="text-sm font-medium text-gray-900 mb-2">Payment Breakdown:</h4>
+                  <div className="space-y-1 text-xs text-gray-600">
+                    <div className="flex justify-between">
+                      <span>Advance (Delivery Charges):</span>
+                      <span>PKR {shippingCost.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Cash on Delivery:</span>
+                      <span>PKR {(discountedSubtotal + salesTax).toLocaleString()}</span>
+                      <span className="text-xs text-gray-500">(Products + 4% tax)</span>
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
               <div className="flex justify-between mt-4 pt-4 border-t border-gray-200">
                 <span className="font-medium text-base sm:text-lg">Total</span>
