@@ -159,8 +159,8 @@ const CheckoutPage = () => {
     const validCodes = [
       {
         code: 'IJS12',
-        discountPercent: 12,
-        validFrom: new Date('2026-01-01'), // Set your start date
+        discountPercent: 0,
+        validFrom: new Date('2029-01-01'), // Set your start date
         validTo: new Date(new Date().getTime() + (5 * 24 * 60 * 60 * 1000)) // 5 days from now
       }
       // Add more promo codes here as needed
