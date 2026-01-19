@@ -141,8 +141,8 @@ const BuyNowCheckout = () => {
     const validCodes = [
       {
         code: 'IJS12',
-        discountPercent: 12,
-        validFrom: new Date('2026-01-01'), // Set your start date
+        discountPercent: 0,
+        validFrom: new Date('2027-01-01'), // Set your start date
         validTo: new Date(new Date().getTime() + (5 * 24 * 60 * 60 * 1000)) // 5 days from now
       }
       // Add more promo codes here as needed
@@ -701,11 +701,11 @@ const BuyNowCheckout = () => {
                 
                 {/* Current promo info */}
                 {!promoApplied && (
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-                    <p className="text-sm text-blue-700 font-medium">Available Promo Code:</p>
-                    <p className="text-sm text-blue-600">Use <span className="font-bold">IJS12</span> for 12% off</p>
-                    <p className="text-xs text-blue-500 mt-1">Valid for 5 days</p>
-                  </div>
+                  // <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                  //   <p className="text-sm text-blue-700 font-medium">Available Promo Code:</p>
+                  //   <p className="text-sm text-blue-600">Use <span className="font-bold">IJS12</span> for 12% off</p>
+                  //   <p className="text-xs text-blue-500 mt-1">Valid for 5 days</p>
+                  // </div>
                 )}
               </div>
 
