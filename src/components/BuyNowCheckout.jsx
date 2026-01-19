@@ -140,7 +140,7 @@ const BuyNowCheckout = () => {
   const validatePromoCode = (code) => {
     const validCodes = [
       {
-        code: 'IJS12',
+        code: 'IJS123',
         discountPercent: 0,
         validFrom: new Date('2027-01-01'), // Set your start date
         validTo: new Date(new Date().getTime() + (5 * 24 * 60 * 60 * 1000)) // 5 days from now
@@ -677,15 +677,15 @@ const BuyNowCheckout = () => {
                 
                 {/* Promo code messages */}
                 {promoSuccess && (
-                  <div className="p-3 mb-4 bg-green-50 border border-green-200 rounded-md">
-                    <div className="flex items-center">
-                      <svg className="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                      </svg>
-                      <p className="text-sm text-green-700 font-medium">{promoSuccess}</p>
-                    </div>
-                    <p className="text-xs text-green-600 mt-1">Valid for 5 days from activation</p>
-                  </div>
+                  // <div className="p-3 mb-4 bg-green-50 border border-green-200 rounded-md">
+                  //   <div className="flex items-center">
+                  //     <svg className="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  //       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                  //     </svg>
+                  //     <p className="text-sm text-green-700 font-medium">{promoSuccess}</p>
+                  //   </div>
+                  //   <p className="text-xs text-green-600 mt-1">Valid for 5 days from activation</p>
+                  // </div>
                 )}
                 
                 {promoError && (
