@@ -18,7 +18,7 @@ const BuyNowCheckout = () => {
     region: '',
     country: '',
     shippingMethod: 'Standard Delivery',
-    paymentMethod: 'EasyPaisa', // Default to EasyPaisa, will add COD option
+    paymentMethod: 'EasyPaisa', // Only EasyPaisa now
     promoCode: '',
     notes: '',
   });
@@ -46,29 +46,14 @@ const BuyNowCheckout = () => {
     }
   }, []);
 
-  // Calculate shipping cost based on payment method and city
+  // Calculate shipping cost (now only for EasyPaisa)
   const calculateShippingCost = () => {
-    if (form.paymentMethod === 'EasyPaisa') {
-      return 150; // Online payment - flat rate for all Pakistan
-    } else if (form.paymentMethod === 'Cash on Delivery') {
-      const city = form.city.toLowerCase().trim();
-      if (city === 'lahore' || city === 'sialkot') {
-        return 300; // Updated to 300
-      } else if (city === 'karachi') {
-        return 390; // Updated to 390
-      } else {
-        return 360; // Updated to 360 for other cities
-      }
-    }
-    return 150; // Default fallback
+    return 150; // Flat rate for online payment
   };
 
-  // Calculate sales tax (4% for COD only)
+  // Sales tax is always 0 now (no COD)
   const calculateSalesTax = () => {
-    if (form.paymentMethod === 'Cash on Delivery') {
-      return subtotal * 0.04; // 4% sales tax
-    }
-    return 0; // No sales tax for EasyPaisa
+    return 0;
   };
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0);
@@ -88,8 +73,8 @@ const BuyNowCheckout = () => {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
     
-    // Clear the Base64 string if payment method changes and no upload needed
-    if (name === 'paymentMethod' && value !== 'EasyPaisa' && value !== 'Cash on Delivery') {
+    // Clear the Base64 string if payment method changes (though now only one option)
+    if (name === 'paymentMethod' && value !== 'EasyPaisa') {
       setBankTransferProofBase64(null);
       setErrors(prev => ({ ...prev, bankTransferProof: '' }));
     }
@@ -129,7 +114,7 @@ const BuyNowCheckout = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    const requiredFields = [ 'fullName', 'phone', 'address', 'city', 'region', 'country'];
+    const requiredFields = ['fullName', 'phone', 'address', 'city', 'region', 'country'];
     
     requiredFields.forEach(field => {
       if (!form[field]) {
@@ -147,13 +132,9 @@ const BuyNowCheckout = () => {
       newErrors.phone = 'Please enter a valid phone number (at least 7 digits)';
     }
 
-    // Image upload validation for both payment methods
-    if ((form.paymentMethod === 'EasyPaisa' || form.paymentMethod === 'Cash on Delivery') && !bankTransferProofBase64) {
-      if (form.paymentMethod === 'EasyPaisa') {
-        newErrors.bankTransferProof = 'Please upload a screenshot of your EasyPaisa transaction.';
-      } else {
-        newErrors.bankTransferProof = 'Please upload proof of advance delivery charges payment.';
-      }
+    // Image upload validation for EasyPaisa
+    if (!bankTransferProofBase64) {
+      newErrors.bankTransferProof = 'Please upload a screenshot of your EasyPaisa transaction.';
     }
 
     setErrors(newErrors);
@@ -216,7 +197,7 @@ const BuyNowCheckout = () => {
       createdAt: new Date(),
       status: 'processing',
       buyNow: true,
-      bankTransferProofBase64: (form.paymentMethod === 'EasyPaisa' || form.paymentMethod === 'Cash on Delivery') ? bankTransferProofBase64 : null,
+      bankTransferProofBase64: bankTransferProofBase64,
     };
 
     try {
@@ -245,21 +226,7 @@ const BuyNowCheckout = () => {
 
   // Get shipping cost text for display
   const getShippingText = () => {
-    if (form.paymentMethod === 'EasyPaisa') {
-      return 'PKR 150 - All over Pakistan';
-    } else if (form.paymentMethod === 'Cash on Delivery') {
-      const city = form.city.toLowerCase().trim();
-      if (city === 'lahore' || city === 'sialkot') {
-        return 'PKR 300 - Lahore & Sialkot';
-      } else if (city === 'karachi') {
-        return 'PKR 390 - Karachi';
-      } else if (form.city) {
-        return 'PKR 360 - Other Cities';
-      } else {
-        return 'PKR 300-390 - Varies by city';
-      }
-    }
-    return 'PKR 150-390 - Based on payment method and city';
+    return 'PKR 150 - All over Pakistan';
   };
 
   // Show loading if product is not loaded yet
@@ -445,123 +412,64 @@ const BuyNowCheckout = () => {
               <h2 className="text-lg sm:text-xl font-semibold mt-8 mb-6 pb-2 border-b">Payment Method</h2>
               
               <div className="space-y-4">
-                {/* EasyPaisa Option */}
-                <label className="flex items-center p-4 border rounded-md hover:border-black cursor-pointer">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="EasyPaisa"
-                    checked={form.paymentMethod === 'EasyPaisa'}
-                    onChange={handleChange}
-                    className="h-4 w-4 text-black focus:ring-black border-gray-300"
-                  />
-                  <div className="ml-3">
-                    <span className="font-medium text-gray-900 text-sm sm:text-base">EasyPaisa</span>
-                    <p className="text-xs text-gray-500">Pay online - Lower delivery charges (PKR 150)</p>
-                    <p className="text-xs text-green-600">No sales tax applied</p>
+                {/* EasyPaisa Option - Now the only option */}
+                <div className="p-4 border border-blue-300 bg-blue-50 rounded-md">
+                  <div className="flex items-center mb-3">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="EasyPaisa"
+                      checked={form.paymentMethod === 'EasyPaisa'}
+                      onChange={handleChange}
+                      className="h-4 w-4 text-black focus:ring-black border-gray-300"
+                      disabled // Disabled since it's the only option
+                    />
+                    <div className="ml-3">
+                      <span className="font-medium text-gray-900 text-sm sm:text-base">EasyPaisa</span>
+                      <p className="text-xs text-gray-500">Pay online - Delivery charges PKR 150</p>
+                    </div>
                   </div>
-                </label>
 
-                {/* Cash on Delivery (COD) Option */}
-                <label className="flex items-center p-4 border rounded-md hover:border-black cursor-pointer">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="Cash on Delivery"
-                    checked={form.paymentMethod === 'Cash on Delivery'}
-                    onChange={handleChange}
-                    className="h-4 w-4 text-black focus:ring-black border-gray-300"
-                  />
-                  <div className="ml-3">
-                    <span className="font-medium text-gray-900 text-sm sm:text-base">Cash on Delivery</span>
-                    <p className="text-xs text-gray-500">Pay advance delivery charges - Higher delivery charges</p>
-                    <p className="text-xs text-orange-600">+4% sales tax applies</p>
+                  <div className="mt-4 pl-7">
+                    <h3 className="text-base sm:text-lg font-semibold mb-3">EasyPaisa/Sadapay Payment Details</h3>
+                    <p className="text-gray-700 mb-4 text-sm sm:text-base">
+                      Please send the total amount of PKR {total.toLocaleString()} to our EasyPaisa/Sadapay account:
+                    </p>
+                    <ul className="list-disc list-inside text-gray-800 mb-4 text-sm sm:text-base">
+                      <li><strong>Account Name:</strong> Shaista </li>
+                      <li><strong>EasyPaisa Number:</strong> 03303189634</li>
+                    </ul>
+                    <p className="text-gray-700 mb-4 text-sm sm:text-base">
+                      After making the payment, please upload a screenshot of the transaction as proof of payment.
+                    </p>
+                    <div>
+                      <label htmlFor="bankTransferProof" className="block text-sm font-medium text-gray-700 mb-1">
+                        Upload EasyPaisa Transaction Screenshot*
+                      </label>
+                      <input
+                        id="bankTransferProof"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className={`w-full px-4 py-2 border ${errors.bankTransferProof ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-black focus:border-black text-sm sm:text-base`}
+                      />
+                      {errors.bankTransferProof && <p className="mt-1 text-sm text-red-600">{errors.bankTransferProof}</p>}
+                      {bankTransferProofBase64 && (
+                        <p className="mt-2 text-sm text-gray-600">Image selected and converted.</p>
+                      )}
+                      {convertingImage && (
+                        <p className="mt-2 text-sm text-gray-600 flex items-center">
+                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Converting image...
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </label>
+                </div>
               </div>
-
-              {form.paymentMethod === 'EasyPaisa' && (
-                <div className="mt-6 p-4 border border-blue-300 bg-blue-50 rounded-md">
-                  <h3 className="text-base sm:text-lg font-semibold mb-3">EasyPaisa/Sadapay Payment Details</h3>
-                  <p className="text-gray-700 mb-4 text-sm sm:text-base">
-                    Please send the total amount of PKR {total.toLocaleString()} to our EasyPaisa/Sadapay account:
-                  </p>
-                  <ul className="list-disc list-inside text-gray-800 mb-4 text-sm sm:text-base">
-                    <li><strong>Account Name:</strong> Shaista </li>
-                    <li><strong>EasyPaisa Number:</strong> 03303189634</li>
-                  </ul>
-                  <p className="text-gray-700 mb-4 text-sm sm:text-base">
-                    After making the payment, please upload a screenshot of the transaction as proof of payment.
-                  </p>
-                  <div>
-                    <label htmlFor="bankTransferProof" className="block text-sm font-medium text-gray-700 mb-1">
-                      Upload EasyPaisa Transaction Screenshot*
-                    </label>
-                    <input
-                      id="bankTransferProof"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className={`w-full px-4 py-2 border ${errors.bankTransferProof ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-black focus:border-black text-sm sm:text-base`}
-                    />
-                    {errors.bankTransferProof && <p className="mt-1 text-sm text-red-600">{errors.bankTransferProof}</p>}
-                    {bankTransferProofBase64 && (
-                      <p className="mt-2 text-sm text-gray-600">Image selected and converted.</p>
-                    )}
-                    {convertingImage && (
-                      <p className="mt-2 text-sm text-gray-600 flex items-center">
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Converting image...
-                      </p>
-                    )}
-                </div>
-                </div>
-              )}
-
-              {form.paymentMethod === 'Cash on Delivery' && (
-                <div className="mt-6 p-4 border border-orange-300 bg-orange-50 rounded-md">
-                  <h3 className="text-base sm:text-lg font-semibold mb-3">Cash on Delivery - Advance Payment Required</h3>
-                  <p className="text-gray-700 mb-4 text-sm sm:text-base">
-                    For Cash on Delivery orders, you need to pay advance delivery charges of PKR {shippingCost.toLocaleString()} to our EasyPaisa account:
-                  </p>
-                  <ul className="list-disc list-inside text-gray-800 mb-4 text-sm sm:text-base">
-                    <li><strong>Account Name:</strong> Shaista </li>
-                    <li><strong>EasyPaisa Number:</strong> 03303189634</li>
-                    <li><strong>Amount to Send:</strong> PKR {shippingCost.toLocaleString()} (Delivery Charges)</li>
-                  </ul>
-                  <p className="text-gray-700 mb-4 text-sm sm:text-base">
-                    After paying the advance delivery charges, upload a screenshot of the transaction. You'll pay the remaining product amount plus 4% sales tax (PKR {(subtotal + salesTax).toLocaleString()}) when the order is delivered.
-                  </p>
-                  <div>
-                    <label htmlFor="bankTransferProof" className="block text-sm font-medium text-gray-700 mb-1">
-                      Upload Advance Payment Screenshot*
-                    </label>
-                    <input
-                      id="bankTransferProof"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className={`w-full px-4 py-2 border ${errors.bankTransferProof ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-black focus:border-black text-sm sm:text-base`}
-                    />
-                    {errors.bankTransferProof && <p className="mt-1 text-sm text-red-600">{errors.bankTransferProof}</p>}
-                    {bankTransferProofBase64 && (
-                      <p className="mt-2 text-sm text-gray-600">Image selected and converted.</p>
-                    )}
-                    {convertingImage && (
-                      <p className="mt-2 text-sm text-gray-600 flex items-center">
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Converting image...
-                      </p>
-                    )}
-                </div>
-                </div>
-              )}
 
               <div className="mt-6">
                 <label htmlFor="promoCode" className="block text-sm font-medium text-gray-700 mb-1">Promo Code</label>
@@ -656,37 +564,11 @@ const BuyNowCheckout = () => {
                   <span className="text-sm text-gray-600">Shipping</span>
                   <span className="text-sm">PKR {shippingCost.toLocaleString()}</span>
                 </div>
-
-                {/* Show sales tax only for COD */}
-                {form.paymentMethod === 'Cash on Delivery' && (
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Sales Tax (4%)</span>
-                    <span className="text-sm">PKR {salesTax.toLocaleString()}</span>
-                  </div>
-                )}
                 
                 {form.promoCode && (
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Discount</span>
                     <span className="text-sm text-green-600">-PKR 0</span>
-                  </div>
-                )}
-
-                {/* Show COD payment breakdown */}
-                {form.paymentMethod === 'Cash on Delivery' && (
-                  <div className="mt-4 p-3 bg-gray-50 rounded-md border">
-                    <h4 className="text-sm font-medium text-gray-900 mb-2">Payment Breakdown:</h4>
-                    <div className="space-y-1 text-xs text-gray-600">
-                      <div className="flex justify-between">
-                        <span>Advance (Delivery Charges):</span>
-                        <span>PKR {shippingCost.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Cash on Delivery:</span>
-                        <span>PKR {(subtotal + salesTax).toLocaleString()}</span>
-                        <span className="text-xs text-gray-500">(Products + 4% tax)</span>
-                      </div>
-                    </div>
                   </div>
                 )}
               </div>
@@ -718,9 +600,6 @@ const BuyNowCheckout = () => {
 
               <div className="mt-6 text-center text-xs sm:text-sm text-gray-500">
                 <p>100% secure checkout</p>
-                {form.paymentMethod === 'Cash on Delivery' && (
-                  <p className="mt-1">Pay advance delivery charges now, product amount + 4% tax on delivery</p>
-                )}
               </div>
             </div>
           </div>
