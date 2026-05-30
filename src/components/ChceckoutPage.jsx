@@ -21,7 +21,7 @@ const CheckoutPage = () => {
     region: '',
     country: '',
     shippingMethod: 'Standard Delivery',
-    paymentMethod: 'EasyPaisa', // Only EasyPaisa now
+    paymentMethod: 'NayaPay', // NayaPay or COD
     promoCode: '',
     notes: '',
   });
@@ -64,13 +64,28 @@ const CheckoutPage = () => {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // Calculate shipping cost (now only for EasyPaisa)
+  // Calculate shipping cost based on city and payment method
   const calculateShippingCost = () => {
-    return 150; // Flat rate for online payment
+    if (form.paymentMethod === 'NayaPay') {
+      return 150; // Flat rate for online payment
+    } else {
+      // COD shipping rates based on city
+      const city = form.city?.toLowerCase() || '';
+      if (city === 'lahore' || city === 'sialkot') {
+        return 300;
+      } else if (city === 'karachi') {
+        return 400;
+      } else {
+        return 350;
+      }
+    }
   };
 
-  // Sales tax is always 0 now (no COD)
+  // Calculate sales tax (4% on subtotal for COD, 0 for NayaPay)
   const calculateSalesTax = () => {
+    if (form.paymentMethod === 'COD') {
+      return subtotal * 0.04; // 4% tax on subtotal for COD
+    }
     return 0;
   };
 
@@ -91,8 +106,8 @@ const CheckoutPage = () => {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
     
-    // Clear the Base64 string if payment method changes (though now only one option)
-    if (name === 'paymentMethod' && value !== 'EasyPaisa') {
+    // Clear the Base64 string if payment method changes
+    if (name === 'paymentMethod') {
       setBankTransferProofBase64(null);
       setErrors(prev => ({ ...prev, bankTransferProof: '' }));
     }
@@ -150,9 +165,9 @@ const CheckoutPage = () => {
       newErrors.phone = 'Please enter a valid phone number (at least 7 digits)';
     }
 
-    // Image upload validation for EasyPaisa
-    if (!bankTransferProofBase64) {
-      newErrors.bankTransferProof = 'Please upload a screenshot of your EasyPaisa transaction.';
+    // Image upload validation for both NayaPay and COD
+    if ((form.paymentMethod === 'NayaPay' || form.paymentMethod === 'COD') && !bankTransferProofBase64) {
+      newErrors.bankTransferProof = 'Please upload a screenshot of your payment transaction.';
     }
 
     setErrors(newErrors);
@@ -221,7 +236,7 @@ const CheckoutPage = () => {
       salesTax,
       total,
       createdAt: new Date(),
-      status: 'processing',
+      status: form.paymentMethod === 'COD' ? 'pending_payment' : 'processing',
       bankTransferProofBase64: bankTransferProofBase64,
     };
 
@@ -251,7 +266,37 @@ const CheckoutPage = () => {
 
   // Get shipping cost text for display
   const getShippingText = () => {
-    return 'PKR 150 - All over Pakistan';
+    if (form.paymentMethod === 'NayaPay') {
+      return 'PKR 150 - All over Pakistan';
+    } else {
+      const city = form.city?.toLowerCase() || '';
+      if (city === 'lahore' || city === 'sialkot') {
+        return 'PKR 300 - Lahore & Sialkot';
+      } else if (city === 'karachi') {
+        return 'PKR 400 - Karachi';
+      } else {
+        return 'PKR 350 - Other Cities';
+      }
+    }
+  };
+
+  // Get payment instructions based on payment method
+  const getPaymentInstructions = () => {
+    if (form.paymentMethod === 'NayaPay') {
+      return {
+        title: 'NayaPay Payment Details',
+        accountName: 'Malaika',
+        accountNumber: '03249910232',
+        instructions: 'Please send the total amount to our NayaPay/Sadapay account. After making the payment, please upload a screenshot of the transaction as proof of payment.'
+      };
+    } else {
+      return {
+        title: 'COD Advance Payment Details',
+        accountName: 'Malaika',
+        accountNumber: '03249910232',
+        instructions: `Please send the advance delivery charges of PKR ${shippingCost.toLocaleString()} to our account. After sending the payment, please upload a screenshot of the transaction as proof of payment. The remaining amount of PKR ${subtotal.toLocaleString()} will be collected at the time of delivery.`
+      };
+    }
   };
 
   // Show empty cart message if no items
@@ -276,6 +321,8 @@ const CheckoutPage = () => {
       </>
     );
   }
+
+  const paymentInstructions = getPaymentInstructions();
 
   return (
     <>
@@ -438,64 +485,114 @@ const CheckoutPage = () => {
               <h2 className="text-lg sm:text-xl font-semibold mt-8 mb-6 pb-2 border-b">Payment Method</h2>
               
               <div className="space-y-4">
-                {/* EasyPaisa Option - Now the only option */}
-                <div className="p-4 border border-blue-300 bg-blue-50 rounded-md">
+                {/* NayaPay Option */}
+                <div className={`p-4 border rounded-md ${form.paymentMethod === 'NayaPay' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}>
                   <div className="flex items-center mb-3">
                     <input
                       type="radio"
                       name="paymentMethod"
-                      value="EasyPaisa"
-                      checked={form.paymentMethod === 'EasyPaisa'}
+                      value="NayaPay"
+                      checked={form.paymentMethod === 'NayaPay'}
                       onChange={handleChange}
                       className="h-4 w-4 text-black focus:ring-black border-gray-300"
-                      disabled // Disabled since it's the only option
                     />
                     <div className="ml-3">
-                      <span className="font-medium text-gray-900 text-sm sm:text-base">EasyPaisa</span>
+                      <span className="font-medium text-gray-900 text-sm sm:text-base">NayaPay</span>
                       <p className="text-xs text-gray-500">Pay online - Delivery charges PKR 150</p>
                     </div>
                   </div>
 
-                  <div className="mt-4 pl-7">
-                    <h3 className="text-base sm:text-lg font-semibold mb-3">EasyPaisa/Sadapay Payment Details</h3>
-                    <p className="text-gray-700 mb-4 text-sm sm:text-base">
-                      Please send the total amount of PKR {total.toLocaleString()} to our EasyPaisa/Sadapay account:
-                    </p>
-                    <ul className="list-disc list-inside text-gray-800 mb-4 text-sm sm:text-base">
-                      <li><strong>Account Name:</strong> Shaista </li>
-                      <li><strong>EasyPaisa Number:</strong> 03303189634</li>
-                    </ul>
-                    <p className="text-gray-700 mb-4 text-sm sm:text-base">
-                      After making the payment, please upload a screenshot of the transaction as proof of payment.
-                    </p>
-                    <div>
-                      <label htmlFor="bankTransferProof" className="block text-sm font-medium text-gray-700 mb-1">
-                        Upload EasyPaisa Transaction Screenshot*
-                      </label>
-                      <input
-                        id="bankTransferProof"
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        className={`w-full px-4 py-2 border ${errors.bankTransferProof ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-black focus:border-black text-sm sm:text-base`}
-                      />
-                      {errors.bankTransferProof && <p className="mt-1 text-sm text-red-600">{errors.bankTransferProof}</p>}
-                      {bankTransferProofBase64 && (
-                        <p className="mt-2 text-sm text-gray-600">Image selected and converted.</p>
-                      )}
-                      {convertingImage && (
-                        <p className="mt-2 text-sm text-gray-600 flex items-center">
-                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          Converting image...
-                        </p>
-                      )}
+                  {form.paymentMethod === 'NayaPay' && (
+                    <div className="mt-4 pl-7">
+                      <h3 className="text-base sm:text-lg font-semibold mb-3">{paymentInstructions.title}</h3>
+                      <p className="text-gray-700 mb-4 text-sm sm:text-base">
+                        {paymentInstructions.instructions}
+                      </p>
+                      <ul className="list-disc list-inside text-gray-800 mb-4 text-sm sm:text-base">
+                        <li><strong>Account Name:</strong> {paymentInstructions.accountName}</li>
+                        <li><strong>NayaPay Number:</strong> {paymentInstructions.accountNumber}</li>
+                      </ul>
+                      <div>
+                        <label htmlFor="bankTransferProof" className="block text-sm font-medium text-gray-700 mb-1">
+                          Upload Transaction Screenshot*
+                        </label>
+                        <input
+                          id="bankTransferProof"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileChange}
+                          className={`w-full px-4 py-2 border ${errors.bankTransferProof ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-black focus:border-black text-sm sm:text-base`}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* COD Option - New */}
+                <div className={`p-4 border rounded-md ${form.paymentMethod === 'COD' ? 'border-green-500 bg-green-50' : 'border-gray-300'}`}>
+                  <div className="flex items-center mb-3">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="COD"
+                      checked={form.paymentMethod === 'COD'}
+                      onChange={handleChange}
+                      className="h-4 w-4 text-black focus:ring-black border-gray-300"
+                    />
+                    <div className="ml-3">
+                      <span className="font-medium text-gray-900 text-sm sm:text-base">Cash on Delivery (COD)</span>
+                      <p className="text-xs text-gray-500">Pay delivery charges in advance</p>
                     </div>
                   </div>
+
+                  {form.paymentMethod === 'COD' && (
+                    <div className="mt-4 pl-7">
+                      <h3 className="text-base sm:text-lg font-semibold mb-3">{paymentInstructions.title}</h3>
+                      <p className="text-gray-700 mb-4 text-sm sm:text-base">
+                        {paymentInstructions.instructions}
+                      </p>
+                      <ul className="list-disc list-inside text-gray-800 mb-4 text-sm sm:text-base">
+                        <li><strong>Account Name:</strong> {paymentInstructions.accountName}</li>
+                        <li><strong>Account Number:</strong> {paymentInstructions.accountNumber}</li>
+                      </ul>
+                      <div className="mb-4 p-3 bg-yellow-50 rounded-md">
+                        <p className="text-sm text-yellow-800">
+                          <strong>Note:</strong> For COD orders, you only need to pay the delivery charges in advance. 
+                          The product amount (PKR {subtotal.toLocaleString()}) will be paid at the time of delivery.
+                        </p>
+                      </div>
+                      <div>
+                        <label htmlFor="bankTransferProof" className="block text-sm font-medium text-gray-700 mb-1">
+                          Upload Delivery Charges Payment Screenshot*
+                        </label>
+                        <input
+                          id="bankTransferProof"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileChange}
+                          className={`w-full px-4 py-2 border ${errors.bankTransferProof ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-black focus:border-black text-sm sm:text-base`}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
+
+              {errors.bankTransferProof && (
+                <p className="mt-2 text-sm text-red-600">{errors.bankTransferProof}</p>
+              )}
+              {bankTransferProofBase64 && (
+                <p className="mt-2 text-sm text-gray-600">✓ Payment screenshot uploaded successfully.</p>
+              )}
+              {convertingImage && (
+                <p className="mt-2 text-sm text-gray-600 flex items-center">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Converting image...
+                </p>
+              )}
 
               <div className="mt-6">
                 <label htmlFor="promoCode" className="block text-sm font-medium text-gray-700 mb-1">Promo Code</label>
@@ -611,6 +708,13 @@ const CheckoutPage = () => {
                   <span className="text-sm text-gray-600">Shipping</span>
                   <span className="text-sm">PKR {shippingCost.toLocaleString()}</span>
                 </div>
+
+                {form.paymentMethod === 'COD' && salesTax > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Tax (4%)</span>
+                    <span className="text-sm">PKR {salesTax.toLocaleString()}</span>
+                  </div>
+                )}
                 
                 {form.promoCode && (
                   <div className="flex justify-between">
@@ -624,6 +728,17 @@ const CheckoutPage = () => {
                 <span className="font-medium text-base sm:text-lg">Total</span>
                 <span className="font-bold text-base sm:text-lg">PKR {total.toLocaleString()}</span>
               </div>
+
+              {form.paymentMethod === 'COD' && (
+                <div className="mt-3 p-3 bg-yellow-50 rounded-md">
+                  <p className="text-xs text-yellow-800">
+                    <strong>Payment Breakdown for COD:</strong><br />
+                    • Pay Now: PKR {shippingCost.toLocaleString()} (Delivery Charges)<br />
+                    • Pay on Delivery: PKR {subtotal.toLocaleString()} (Product Amount)<br />
+                    • Tax (4%): PKR {salesTax.toLocaleString()} (Included in delivery)
+                  </p>
+                </div>
+              )}
 
               <button
                 onClick={placeOrder}

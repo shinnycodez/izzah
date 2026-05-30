@@ -45,17 +45,12 @@ const categories = [
     imageUrl:"https://pbs.twimg.com/media/Gzc-9QZXwAA9qa0?format=jpg&name=small",
      link: "Bag pins"
   },
-              {
-    id: 5,
-    title: "Plushie keychains ⋆⭒˚.⋆",
-    imageUrl:"https://pbs.twimg.com/media/Gzc-_M8X0AAo98l?format=jpg&name=small",
-     link: "Plushie keychains"
-  },
+
                 {
     id: 5,
-    title: "Hair pins ⋆⭒˚.⋆",
-    imageUrl:"https://pbs.twimg.com/media/GzrbVpLXgAAOIr2?format=jpg&name=small",
-     link: "Hair pins"
+    title: "Beaded bands ⋆⭒˚.⋆",
+    imageUrl:"https://pbs.twimg.com/media/HJlpojqWIAMAUNy?format=jpg&name=900x900",
+     link: "Beaded bands"
   },
                   {
     id: 5,
